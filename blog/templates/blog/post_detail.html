@@ -1,0 +1,186 @@
+{% extends "blog/base.html" %}
+{% block content %}
+
+<!-- ===================== -->
+<!-- POST SECTION -->
+<!-- ===================== -->
+
+<article class="content-section post-detail">
+
+  <div class="d-flex align-items-center mb-3">
+    <img class="rounded-circle article-img"
+         src="{{ object.author.profile.image.url }}">
+
+    <div class="ml-3">
+      <a class="font-weight-bold"
+         href="{% url 'user-posts' object.author.username %}">
+        {{ object.author }}
+      </a>
+      <br>
+      <small class="text-muted">
+        {{ object.date_posted|date:"F d, Y" }}
+      </small>
+    </div>
+  </div>
+
+  <h2 class="article-title mb-3">
+    {{ object.title }}
+  </h2>
+
+  <p class="article-content mb-4">
+    {{ object.content }}
+  </p>
+
+  <div class="d-flex justify-content-between align-items-center border-top pt-2">
+    <small class="text-muted">
+      💬 {{ object.comment_count }} comments
+    </small>
+
+    {% if object.author == user %}
+    <div>
+      <a class="btn btn-outline-secondary btn-sm"
+         href="{% url 'post-update' object.id %}">
+        Edit
+      </a>
+      <a class="btn btn-outline-danger btn-sm"
+         href="{% url 'post-delete' object.id %}">
+        Delete
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+</article>
+
+
+
+<!-- ===================== -->
+<!-- COMMENT FORM -->
+<!-- ===================== -->
+
+<div class="content-section mt-4">
+
+  {% if user.is_authenticated %}
+  <form method="POST">
+    {% csrf_token %}
+    <textarea name="content"
+              required
+              placeholder="Write a comment..."
+              class="comment-input mb-2"></textarea>
+
+    <button type="submit"
+            class="btn btn-primary btn-sm">
+      Post Comment
+    </button>
+  </form>
+  {% else %}
+  <p class="mb-0">
+    <a href="{% url 'login' %}">Login</a> to join the conversation.
+  </p>
+  {% endif %}
+
+</div>
+
+
+
+<!-- ===================== -->
+<!-- COMMENTS LIST -->
+<!-- ===================== -->
+
+<div class="content-section mt-4">
+
+  <h5 class="mb-3">
+    Comments ({{ object.comment_count }})
+  </h5>
+
+  {% for comment in comments %}
+  <div class="comment-box mb-4">
+
+    <!-- Comment Header -->
+    <div class="d-flex justify-content-between">
+      <div>
+        <strong>{{ comment.user }}</strong>
+        <small class="text-muted ml-2">
+          {{ comment.date_posted|date:"M d, Y H:i" }}
+        </small>
+      </div>
+    </div>
+
+    <!-- Comment Body -->
+    <p class="mt-2 mb-2">
+      {{ comment.content }}
+    </p>
+
+    <!-- Reply Button -->
+    {% if user.is_authenticated %}
+    <button type="button"
+            class="btn btn-link btn-sm p-0"
+            onclick="toggleReply({{ comment.id }})">
+      Reply
+    </button>
+    {% endif %}
+
+    <!-- Reply Form -->
+    <form method="POST"
+          id="reply-{{ comment.id }}"
+          style="display:none;"
+          class="mt-2">
+      {% csrf_token %}
+      <input type="hidden"
+             name="parent_id"
+             value="{{ comment.id }}">
+
+      <textarea name="content"
+                required
+                placeholder="Reply..."
+                class="comment-input mb-2"></textarea>
+
+      <button type="submit"
+              class="btn btn-sm btn-primary">
+        Reply
+      </button>
+    </form>
+
+    <!-- Replies -->
+    {% for reply in comment.replies.all %}
+    <div class="reply-box mt-3">
+
+      <div class="d-flex justify-content-between">
+        <div>
+          <strong>{{ reply.user }}</strong>
+          <small class="text-muted ml-2">
+            {{ reply.date_posted|date:"M d, Y H:i" }}
+          </small>
+        </div>
+      </div>
+
+      <p class="mt-2 mb-1">
+        {{ reply.content }}
+      </p>
+
+    </div>
+    {% endfor %}
+
+  </div>
+
+  {% empty %}
+  <p class="text-muted">No comments yet. Be the first to comment.</p>
+  {% endfor %}
+
+</div>
+
+
+
+<!-- ===================== -->
+<!-- REPLY TOGGLE SCRIPT -->
+<!-- ===================== -->
+
+<script>
+function toggleReply(id) {
+  const form = document.getElementById("reply-" + id);
+  form.style.display =
+      form.style.display === "none" ? "block" : "none";
+}
+</script>
+
+{% endblock content %}
