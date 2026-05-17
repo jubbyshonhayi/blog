@@ -9,11 +9,12 @@ from django.views.generic import (
     DeleteView
 )
 from django.urls import reverse
+from django.db.models import Prefetch
 from .models import Post, Comment
 
 
 def blog_home(request):
-    context = {'posts': Post.objects.all()}
+    context = {'posts': Post.objects.select_related('author', 'author__profile')}
     return render(request, 'blog/home.html', context)
 
 
@@ -23,6 +24,9 @@ class PostListView(ListView):
     context_object_name = 'posts'
     ordering = ['-date_posted']
     paginate_by = 5
+
+    def get_queryset(self):
+        return Post.objects.select_related('author', 'author__profile').order_by('-date_posted')
 
 
 class UserPostListView(ListView):
@@ -38,7 +42,7 @@ class UserPostListView(ListView):
         )
         return Post.objects.filter(
             author=user
-        ).order_by('-date_posted')
+        ).select_related('author', 'author__profile').order_by('-date_posted')
 
 
 # =========================
@@ -47,14 +51,30 @@ class UserPostListView(ListView):
 class PostDetailView(DetailView):
     model = Post
 
+    def get_queryset(self):
+        replies = Comment.objects.select_related('user').order_by('date_posted')
+        return Post.objects.select_related('author', 'author__profile').prefetch_related(
+            Prefetch(
+                'comments',
+                queryset=Comment.objects.select_related('user').order_by('-date_posted').prefetch_related(
+                    Prefetch('replies', queryset=replies)
+                ),
+            )
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         post = self.get_object()
 
+        comments = list(post.comments.all())
+
         # Only top-level comments
-        context['comments'] = post.comments.filter(
-            parent__isnull=True
-        ).order_by('-date_posted')
+        context['comments'] = [
+            comment
+            for comment in comments
+            if comment.parent_id is None
+        ]
+        context['comment_count'] = len(comments)
 
         return context
 
@@ -71,7 +91,7 @@ class PostDetailView(DetailView):
 
         # Determine who to tag
         if parent_id:
-            parent = Comment.objects.get(id=parent_id)
+            parent = Comment.objects.select_related('user').get(id=parent_id)
             tagged_username = parent.user.username
         else:
             tagged_username = self.object.author.username
