@@ -15,7 +15,12 @@ class Profile(models.Model):
 
         try:
             img = Image.open(self.image.path)
-        except (FileNotFoundError, UnidentifiedImageError, ValueError):
+        except FileNotFoundError:
+            if self.image.name != 'default.jpg':
+                self.image = 'default.jpg'
+                super().save(update_fields=['image'])
+            return
+        except (UnidentifiedImageError, ValueError):
             return
 
         if img.height > 300 or img.width > 300:

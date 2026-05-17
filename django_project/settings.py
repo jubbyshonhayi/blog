@@ -104,6 +104,7 @@ DATABASES = {
         ssl_require=DATABASE_URL.startswith(("postgres://", "postgresql://")),
     )
 }
+DATABASES["default"]["CONN_MAX_AGE"] = 600
 
 
 # Password validation
