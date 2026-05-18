@@ -156,6 +156,28 @@ a.article-title:hover {
   font-weight: 600;
 }
 
+.sidebar-section h4,
+.sidebar-section h5 {
+  font-weight: 600;
+}
+
+.sidebar-links a {
+  display: block;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  color: #2f5f7f;
+  line-height: 1.35;
+}
+
+.sidebar-links a:hover {
+  color: #1f3f55;
+  text-decoration: none;
+}
+
+.sidebar-cta {
+  color: #666;
+  font-size: 14px;
+}
 
 
 
